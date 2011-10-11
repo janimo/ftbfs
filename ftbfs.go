@@ -9,6 +9,8 @@ import (
 	"flag"
 	"strings"
 	"io/ioutil"
+	"launchpad.net/gobson/bson"
+	"launchpad.net/mgo"
 	"launchpad.net/lpad"
 )
 
@@ -46,6 +48,18 @@ func getBuildLog(url string) string {
 	return string(b[s:e])
 }
 
+//Check if a build log is in the database
+func stored(url string) bool {
+	q := collection.Find(bson.M{"url":url})
+	c, err := q.Count()
+	check(err)
+	return c > 0
+}
+
+func store(url, content, datecreated string) {
+	collection.Insert(bson.M{"url":url, "content":content, "datecreated":datecreated})
+}
+
 const timeoutMessage = "Build killed with signal 15"
 
 var ftbfs_list map[string]string
@@ -58,12 +72,18 @@ func process(b lpad.Build, state lpad.BuildState) {
 		return
 	}
 
-	fmt.Println("Checking", url)
-	contents := getBuildLog(url)
+	if stored(url) {
+		return
+	}
 
-	if strings.Contains(contents, timeoutMessage) {
+	fmt.Println("Checking", url)
+	content := getBuildLog(url)
+
+	if strings.Contains(content, timeoutMessage) {
 		ftbfs_list[url] = b.DateCreated()
 	}
+
+	store(url, content, b.DateCreated())
 }
 
 //Find current FTBFS logs.
@@ -89,6 +109,22 @@ func ftbfs(root lpad.Root, source_name string) {
 	}
 }
 
+const (
+	MONGO_URL = "localhost"
+	MONGO_DB = "FTBFS"
+	MONGO_COL = "ftbfs"
+)
+
+var collection mgo.Collection
+
+func mongoConnect() {
+	fmt.Println("Connecting to MongoDB server at", MONGO_URL)
+	session, err := mgo.Mongo(MONGO_URL)
+	check(err)
+
+	collection = session.DB(MONGO_DB).C(MONGO_COL)
+}
+
 func main() {
 	flag.Parse()
 	args := flag.Args()
@@ -97,6 +133,7 @@ func main() {
 		source_name = args[0]
 	}
 
+	mongoConnect()
 	root := login()
 	ftbfs(root, source_name)
 }
