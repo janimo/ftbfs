@@ -121,6 +121,21 @@ func getFTBFS(root lpad.Root, source_name string) {
 	}
 }
 
+//Struct into which Query.For() unmarshals
+var result *struct {URL string}
+
+
+func queryFTBFS(cause string) {
+	q := collection.Find(bson.M{"cause":cause})
+	c,_ := q.Count()
+	fmt.Printf("A total of %d packages FTBFS with cause '%s'\n\n", c, cause)
+
+	q.For(&result, func() os.Error {
+		fmt.Println(result.URL)
+		return nil
+	})
+}
+
 const (
 	MONGO_URL = "localhost"
 	MONGO_DB = "FTBFS"
@@ -138,9 +153,11 @@ func mongoConnect() {
 
 func main() {
 	var fetch, update bool
+	var cause string
 
 	flag.BoolVar(&fetch, "f", false, "Fetch recent FTBFS data from Launhpad and store it to the database")
 	flag.BoolVar(&update, "u", false, "Update the FTBFS cause field on saved build records")
+	flag.StringVar(&cause, "c", "", "List FTBFS for a given cause (i.e. timeout, opengl)")
 
 	flag.Parse()
 
@@ -152,5 +169,14 @@ func main() {
 
 	if update {
 		updateCauses()
+	}
+
+	if cause != "" {
+		queryFTBFS(cause)
+	}
+
+	if flag.NFlag() == 0 {
+		fmt.Println("Usage:")
+		flag.PrintDefaults()
 	}
 }
