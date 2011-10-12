@@ -28,7 +28,7 @@ func login() lpad.Root {
 }
 
 //Build error messages should only be looked for in the lastBytes of the log text
-const lastBytes = 20 * 1024
+const lastBytes = 100 * 1024
 
 //Retrieve the tail of the contents of a buildlog text pointed to by the URL
 
@@ -48,6 +48,25 @@ func getBuildLog(url string) string {
 	return string(b[s:e])
 }
 
+//Has a value for all architectures we care about, currently only ARM
+var archs = map[string]bool{"armel":true}
+
+func process(b lpad.Build, state lpad.BuildState) {
+
+	//Ignore architectures we do not care about
+	if !archs[b.ArchTag()] {
+		return
+	}
+
+	//Ignore builds with no SPPH as they are not the most recent
+	spph, err := b.CurrentSourcePublicationLink()
+	if err != nil {
+		return
+	}
+
+	save(b, spph)
+}
+
 //Check if a build log is in the database
 func stored(url string) bool {
 	q := collection.Find(bson.M{"url":url})
@@ -56,56 +75,44 @@ func stored(url string) bool {
 	return c > 0
 }
 
-func store(url, content, datecreated string) {
-	collection.Insert(bson.M{"url":url, "content":content, "datecreated":datecreated})
-}
+var errorPatterns = map[string]string{ "timeout":"Build killed with signal 15" }
 
-const timeoutMessage = "Build killed with signal 15"
-
-var ftbfs_list map[string]string
-
-func process(b lpad.Build, state lpad.BuildState) {
+func save(b lpad.Build, spph lpad.SPPH) {
 
 	url := b.BuildLogURL()
-
-	if !strings.Contains(url, "armel") {
-		return
-	}
 
 	if stored(url) {
 		return
 	}
 
-	fmt.Println("Checking", url)
 	content := getBuildLog(url)
 
-	if strings.Contains(content, timeoutMessage) {
-		ftbfs_list[url] = b.DateCreated()
+	cause := "other"
+
+	for c, p := range errorPatterns {
+		if strings.Contains(content, p) {
+			cause = c
+			break
+		}
 	}
 
-	store(url, content, b.DateCreated())
+	fmt.Printf("Saving error log for %s %s %s", spph.PackageName(), spph.PackageVersion(), b.ArchTag())
+
+	collection.Insert(bson.M{"url":url, "cause": cause, "content":content, "datecreated":b.DateCreated()})
 }
 
-//Find current FTBFS logs.
-
-func ftbfs(root lpad.Root, source_name string) {
+//Find current FTBFS logs
+func getFTBFS(root lpad.Root, source_name string) {
 	ubuntu, _ := root.Distro("ubuntu")
 	series, _ := ubuntu.FocusSeries()
-	fmt.Println("Generating ARM FTBFS list for ", series.FullSeriesName())
+	fmt.Println("Generating FTBFS list for", series.FullSeriesName())
 
-	ftbfs_list = make(map[string]string)
 	for _, build_state := range []lpad.BuildState{lpad.BSFailedToBuild} {
 		ftbfs, _ := series.GetBuildRecords(build_state, lpad.PocketRelease, source_name)
 		ftbfs.For(func(b lpad.Build) os.Error {
 			process(b, build_state)
 			return nil
 		})
-	}
-
-	fmt.Println("Timed out builds")
-	fmt.Println("================")
-	for url, date := range ftbfs_list {
-		fmt.Println(url, date)
 	}
 }
 
@@ -118,7 +125,6 @@ const (
 var collection mgo.Collection
 
 func mongoConnect() {
-	fmt.Println("Connecting to MongoDB server at", MONGO_URL)
 	session, err := mgo.Mongo(MONGO_URL)
 	check(err)
 
@@ -135,5 +141,5 @@ func main() {
 
 	mongoConnect()
 	root := login()
-	ftbfs(root, source_name)
+	getFTBFS(root, source_name)
 }
