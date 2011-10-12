@@ -1,5 +1,3 @@
-// A tool that lists ARM packages that FTBFS due to builder timeout
-
 package main
 
 import (
@@ -7,7 +5,6 @@ import (
 	"fmt"
 	"http"
 	"flag"
-	"strings"
 	"io/ioutil"
 	"launchpad.net/gobson/bson"
 	"launchpad.net/mgo"
@@ -75,7 +72,24 @@ func stored(url string) bool {
 	return c > 0
 }
 
-var errorPatterns = map[string]string{ "timeout":"Build killed with signal 15" }
+//A set of hardcoded matches. Needs to allow user specified patterns to be more useful and generic
+var errorPatterns = map[string]string{
+											"timeout" : "Build killed with signal 15",
+											"segfault" : "Segmentation fault",
+											"gcc-ice" : "internal compiler error",
+											"cmake" : "CMake Error",
+											"opengl" : "error: '(GL|gl).* was not declared",
+											"qtopengl": "error: 'GLdouble' has a previous declaration",
+											"linker": "final link failed: Bad value",
+											"tests": "dh_auto_test: .* returned exit code 2",
+}
+
+//Update the cause field for FTBFS records based on a patterns matching their error logs
+func updateCauses() {
+	for cause, p := range errorPatterns {
+		collection.UpdateAll(bson.M{"content":bson.RegEx{Pattern:p}}, bson.M{"$set": bson.M{"cause":cause}})
+	}
+}
 
 func save(b lpad.Build, spph lpad.SPPH) {
 
@@ -87,18 +101,9 @@ func save(b lpad.Build, spph lpad.SPPH) {
 
 	content := getBuildLog(url)
 
-	cause := "other"
+	fmt.Printf("Saving error log for %s %s %s\n", spph.PackageName(), spph.PackageVersion(), b.ArchTag())
 
-	for c, p := range errorPatterns {
-		if strings.Contains(content, p) {
-			cause = c
-			break
-		}
-	}
-
-	fmt.Printf("Saving error log for %s %s %s", spph.PackageName(), spph.PackageVersion(), b.ArchTag())
-
-	collection.Insert(bson.M{"url":url, "cause": cause, "content":content, "datecreated":b.DateCreated()})
+	collection.Insert(bson.M{"url":url, "cause": "other", "content":content, "datecreated":b.DateCreated()})
 }
 
 //Find current FTBFS logs
@@ -132,14 +137,20 @@ func mongoConnect() {
 }
 
 func main() {
+	var fetch, update bool
+
+	flag.BoolVar(&fetch, "f", false, "Fetch recent FTBFS data from Launhpad and store it to the database")
+	flag.BoolVar(&update, "u", false, "Update the FTBFS cause field on saved build records")
+
 	flag.Parse()
-	args := flag.Args()
-	source_name := ""
-	if len(args) == 1 {
-		source_name = args[0]
-	}
 
 	mongoConnect()
-	root := login()
-	getFTBFS(root, source_name)
+	if fetch {
+		root := login()
+		getFTBFS(root, "")
+	}
+
+	if update {
+		updateCauses()
+	}
 }
