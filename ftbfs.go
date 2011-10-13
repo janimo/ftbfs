@@ -103,7 +103,7 @@ func save(b lpad.Build, spph lpad.SPPH) {
 
 	fmt.Printf("Saving error log for %s %s %s\n", spph.PackageName(), spph.PackageVersion(), b.ArchTag())
 
-	collection.Insert(bson.M{"url": url, "cause": "other", "content": content, "datecreated": b.DateCreated()})
+	collection.Upsert(bson.M{"package":spph.PackageName()}, bson.M{"package": spph.PackageName(), "version": spph.PackageVersion(), "url": url, "cause": "other", "content": content, "datecreated": b.DateCreated(), "component": spph.Component()})
 }
 
 //Find current FTBFS logs
