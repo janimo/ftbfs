@@ -46,7 +46,7 @@ func getBuildLog(url string) string {
 }
 
 //Has a value for all architectures we care about, currently only ARM
-var archs = map[string]bool{"armel":true}
+var archs = map[string]bool{"armel": true}
 
 func process(b lpad.Build, state lpad.BuildState) {
 
@@ -66,7 +66,7 @@ func process(b lpad.Build, state lpad.BuildState) {
 
 //Check if a build log is in the database
 func stored(url string) bool {
-	q := collection.Find(bson.M{"url":url})
+	q := collection.Find(bson.M{"url": url})
 	c, err := q.Count()
 	check(err)
 	return c > 0
@@ -74,20 +74,20 @@ func stored(url string) bool {
 
 //A set of hardcoded matches. Needs to allow user specified patterns to be more useful and generic
 var errorPatterns = map[string]string{
-											"timeout" : "Build killed with signal 15",
-											"segfault" : "Segmentation fault",
-											"gcc-ice" : "internal compiler error",
-											"cmake" : "CMake Error",
-											"opengl" : "error: '(GL|gl).* was not declared",
-											"qtopengl": "error: 'GLdouble' has a previous declaration",
-											"linker": "final link failed: Bad value",
-											"tests": "dh_auto_test: .* returned exit code 2",
+	"timeout":  "Build killed with signal 15",
+	"segfault": "Segmentation fault",
+	"gcc-ice":  "internal compiler error",
+	"cmake":    "CMake Error",
+	"opengl":   "error: '(GL|gl).* was not declared",
+	"qtopengl": "error: 'GLdouble' has a previous declaration",
+	"linker":   "final link failed: Bad value",
+	"tests":    "dh_auto_test: .* returned exit code 2",
 }
 
 //Update the cause field for FTBFS records based on a patterns matching their error logs
 func updateCauses() {
 	for cause, p := range errorPatterns {
-		collection.UpdateAll(bson.M{"content":bson.RegEx{Pattern:p}}, bson.M{"$set": bson.M{"cause":cause}})
+		collection.UpdateAll(bson.M{"content": bson.RegEx{Pattern: p}}, bson.M{"$set": bson.M{"cause": cause}})
 	}
 }
 
@@ -103,7 +103,7 @@ func save(b lpad.Build, spph lpad.SPPH) {
 
 	fmt.Printf("Saving error log for %s %s %s\n", spph.PackageName(), spph.PackageVersion(), b.ArchTag())
 
-	collection.Insert(bson.M{"url":url, "cause": "other", "content":content, "datecreated":b.DateCreated()})
+	collection.Insert(bson.M{"url": url, "cause": "other", "content": content, "datecreated": b.DateCreated()})
 }
 
 //Find current FTBFS logs
@@ -122,12 +122,11 @@ func getFTBFS(root lpad.Root, source_name string) {
 }
 
 //Struct into which Query.For() unmarshals
-var result *struct {URL string}
-
+var result *struct{ URL string }
 
 func queryFTBFS(cause string) {
-	q := collection.Find(bson.M{"cause":cause})
-	c,_ := q.Count()
+	q := collection.Find(bson.M{"cause": cause})
+	c, _ := q.Count()
 	fmt.Printf("A total of %d packages FTBFS with cause '%s'\n\n", c, cause)
 
 	q.For(&result, func() os.Error {
@@ -138,7 +137,7 @@ func queryFTBFS(cause string) {
 
 const (
 	MONGO_URL = "localhost"
-	MONGO_DB = "FTBFS"
+	MONGO_DB  = "FTBFS"
 	MONGO_COL = "ftbfs"
 )
 
