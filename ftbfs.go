@@ -103,7 +103,7 @@ func save(b lpad.Build, spph lpad.SPPH) {
 
 	fmt.Printf("Saving error log for %s %s %s\n", spph.PackageName(), spph.PackageVersion(), b.ArchTag())
 
-	collection.Upsert(bson.M{"package":spph.PackageName()}, bson.M{"package": spph.PackageName(), "version": spph.PackageVersion(), "url": url, "cause": "other", "content": content, "datecreated": b.DateCreated(), "component": spph.Component()})
+	collection.Upsert(bson.M{"package": spph.PackageName()}, bson.M{"package": spph.PackageName(), "version": spph.PackageVersion(), "url": url, "cause": "other", "content": content, "datecreated": b.DateCreated(), "component": spph.Component()})
 }
 
 //Find current FTBFS logs
@@ -151,16 +151,23 @@ func mongoConnect() {
 }
 
 func main() {
-	var fetch, update bool
-	var cause string
+	var fetch, update, serve bool
+	var cause, port string
 
 	flag.BoolVar(&fetch, "f", false, "Fetch recent FTBFS data from Launhpad and store it to the database")
 	flag.BoolVar(&update, "u", false, "Update the FTBFS cause field on saved build records")
+	flag.BoolVar(&serve, "s", false, "Start the web server")
+	flag.StringVar(&port, "p", "9999", "Port to listen on")
 	flag.StringVar(&cause, "c", "", "List FTBFS for a given cause (i.e. timeout, opengl)")
 
 	flag.Parse()
 
 	mongoConnect()
+
+	if serve {
+		runServer(port)
+	}
+
 	if fetch {
 		root := login()
 		getFTBFS(root, "")

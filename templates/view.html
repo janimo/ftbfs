@@ -1,0 +1,43 @@
+<html>
+	<head>
+		<link type="text/css" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/themes/ui-darkness/jquery-ui.css" rel="stylesheet" />
+		<link type="text/css" href="/static/css/demo_table.css" rel="stylesheet" />
+
+		<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+		<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script>
+		<script type="text/javascript" src="/static/js/jquery.dataTables.min.js"></script>
+		<script type="text/javascript">
+			$(document).ready(function(){
+					$("#ftbfs").dataTable({
+						"bJQueryUI":true,
+						"bPaginate":false
+						}
+						);
+			});
+		</script>
+	</head>
+	<body>
+		<table border=2 id="ftbfs" class="display">
+			<thead>
+				<tr>
+					<th>Package</th>
+					<th>Version</th>
+					<th>Cause</th>
+					<th>Date</th>
+					<th>Component</th>
+				</tr>
+			</thead>
+			<tbody>
+				{{ range .Entries }}
+				<tr>
+					<td>{{.Package}}</td>
+					<td>{{.Version}}</td>
+					<td>{{.Cause}}</td>
+					<td>{{.Datecreated}}</td>
+					<td>{{.Component}}</td>
+				</tr>
+				{{ end }}
+			</tbody>
+		</table>
+	</body>
+</html>

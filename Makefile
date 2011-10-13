@@ -4,6 +4,7 @@ TARG=ftbfs
 
 GOFILES=\
 	helpers.go\
+	server.go\
 	ftbfs.go\
 
 GC+= -I$(GOPATH)/pkg/$(GOOS)_$(GOARCH)
