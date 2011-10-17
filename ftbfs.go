@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"launchpad.net/gobson/bson"
 	"launchpad.net/mgo"
-	"launchpad.net/lpad"
+	"launchpad.net/~jani/lpad/changes"
 )
 
 func check(err os.Error) {
