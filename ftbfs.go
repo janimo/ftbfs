@@ -31,8 +31,7 @@ const endOfLog = "FAILED [dpkg-buildpackage died]"
 //Build error messages should only be looked for in the lastBytes of the log text
 const lastBytes = 100 * 1024
 
-//Retrieve the tail of the contents of a buildlog text pointed to by the URL
-
+//Retrieve the gist of the error logs pointed to by the URL
 func getBuildLog(url string) string {
 	response, err := http.Get(url)
 	check(err)
@@ -50,7 +49,17 @@ func getBuildLog(url string) string {
 
 	//drop anything after the error message
 	res := strings.SplitN(string(b[s:e]), endOfLog, 2)
-	return res[0]
+
+	//keep only last 200 lines
+	split := strings.Split(res[0], "\n")
+
+	e = len(split)-1
+	s = 0
+	if e > 200 {
+		s = e - 200
+	}
+
+	return strings.Join(split[s:e], "\n")
 }
 
 //Has a value for all architectures we care about, currently only ARM
