@@ -99,6 +99,8 @@ var errorPatterns = map[string]string{
 	"qtopengl": "error: 'GLdouble' has a previous declaration",
 	"linker":   "final link failed: Bad value",
 	"tests":    "dh_auto_test: .* returned exit code 2",
+	"dependencies": "but it is not going to be installed",
+	"warnings": "some warnings being treated as errors",
 }
 
 //Update the cause field for FTBFS records based on a patterns matching their error logs
