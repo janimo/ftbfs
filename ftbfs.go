@@ -172,8 +172,10 @@ func main() {
 
 	mongoConnect()
 
+	s := make(chan int)
+
 	if serve {
-		runServer(port)
+		go runServer(port, s)
 	}
 
 	if fetch {
@@ -192,5 +194,9 @@ func main() {
 	if flag.NFlag() == 0 {
 		fmt.Println("Usage:")
 		flag.PrintDefaults()
+	}
+
+	if serve {
+		<-s
 	}
 }

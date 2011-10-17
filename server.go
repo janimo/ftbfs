@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"time"
 	"http"
 	"template"
 )
@@ -45,9 +46,16 @@ func viewHandle(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, p)
 }
 
+func updateEntries() {
+	c := time.Tick(3e9)
+	for {
+		fillEntries()
+		<-c
+	}
+}
 //Start the web server
-func runServer(port string) {
-	fillEntries()
+func runServer(port string, s chan int) {
+	go updateEntries()
 
 	http.HandleFunc("/view/", viewHandle)
 
@@ -59,4 +67,5 @@ func runServer(port string) {
 		println(err.String())
 	}
 
+	s<-1
 }
