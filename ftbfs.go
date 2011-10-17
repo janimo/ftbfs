@@ -6,6 +6,7 @@ import (
 	"http"
 	"flag"
 	"io/ioutil"
+	"strings"
 	"launchpad.net/gobson/bson"
 	"launchpad.net/mgo"
 	"launchpad.net/~jani/lpad/changes"
@@ -24,6 +25,9 @@ func login() lpad.Root {
 	return root
 }
 
+//Line in the buildlogs immediately following the error messages
+const endOfLog = "FAILED [dpkg-buildpackage died]"
+
 //Build error messages should only be looked for in the lastBytes of the log text
 const lastBytes = 100 * 1024
 
@@ -37,12 +41,16 @@ func getBuildLog(url string) string {
 	b, err := ioutil.ReadAll(response.Body)
 	check(err)
 
+	//only the last part of the log is relevant
 	e := len(b) - 1
 	s := 0
 	if e > lastBytes {
 		s = e - lastBytes
 	}
-	return string(b[s:e])
+
+	//drop anything after the error message
+	res := strings.SplitN(string(b[s:e]), endOfLog, 2)
+	return res[0]
 }
 
 //Has a value for all architectures we care about, currently only ARM
