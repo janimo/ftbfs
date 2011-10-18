@@ -103,8 +103,27 @@ var errorPatterns = map[string]string{
 	"warnings": "some warnings being treated as errors",
 }
 
+
+type PatternCause struct {
+	Pattern string      //string occuring in the error log
+	Cause string        //name of the corresponding error cause
+}
+
 //Update the cause field for FTBFS records based on a patterns matching their error logs
 func updateCauses() {
+
+	var c *PatternCause
+
+	q := causes.Find(nil)
+
+	//If there are additional patterns in the DB load those as well
+//	if q != nil {
+		q.For(&c, func() os.Error {
+			errorPatterns[c.Cause]=c.Pattern
+			return nil
+		})
+//	}
+
 	for cause, p := range errorPatterns {
 		collection.UpdateAll(bson.M{"content": bson.RegEx{Pattern: p}}, bson.M{"$set": bson.M{"cause": cause}})
 	}
@@ -157,16 +176,18 @@ func queryFTBFS(cause string) {
 const (
 	MONGO_URL = "localhost"
 	MONGO_DB  = "FTBFS"
-	MONGO_COL = "ftbfs"
+	MONGO_COL_FTBFS = "ftbfs"
+	MONGO_COL_CAUSES = "causes"
 )
 
-var collection mgo.Collection
+var collection, causes mgo.Collection
 
 func mongoConnect() {
 	session, err := mgo.Mongo(MONGO_URL)
 	check(err)
 
-	collection = session.DB(MONGO_DB).C(MONGO_COL)
+	collection = session.DB(MONGO_DB).C(MONGO_COL_FTBFS)
+	causes = session.DB(MONGO_DB).C(MONGO_COL_CAUSES)
 }
 
 func main() {
