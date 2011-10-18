@@ -65,7 +65,7 @@ func updateEntries() {
 func runServer(port string, s chan int) {
 	go updateEntries()
 
-	http.HandleFunc("/view/", viewHandle)
+	http.HandleFunc("/", viewHandle)
 	http.HandleFunc("/logview/", logViewHandle)
 
 	pwd, _ := os.Getwd()
