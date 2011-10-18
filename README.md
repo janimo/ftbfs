@@ -48,4 +48,6 @@ source dir as the templates and static files are there.
 
     ftbfs -s
 
+By default the server listens on port 9999, change that by passing -p. See the results
 
+    firefox http://localhost:9999
