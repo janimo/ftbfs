@@ -53,7 +53,7 @@ func getBuildLog(url string) string {
 	//keep only last 200 lines
 	split := strings.Split(res[0], "\n")
 
-	e = len(split)-1
+	e = len(split) - 1
 	s = 0
 	if e > 200 {
 		s = e - 200
@@ -91,22 +91,21 @@ func stored(url string) bool {
 
 //A set of hardcoded matches. Needs to allow user specified patterns to be more useful and generic
 var errorPatterns = map[string]string{
-	"timeout":  "Build killed with signal 15",
-	"segfault": "Segmentation fault",
-	"gcc-ice":  "internal compiler error",
-	"cmake":    "CMake Error",
-	"opengl":   "error: '(GL|gl).* was not declared",
-	"qtopengl": "error: 'GLdouble' has a previous declaration",
-	"linker":   "final link failed: Bad value",
-	"tests":    "dh_auto_test: .* returned exit code 2",
+	"timeout":      "Build killed with signal 15",
+	"segfault":     "Segmentation fault",
+	"gcc-ice":      "internal compiler error",
+	"cmake":        "CMake Error",
+	"opengl":       "error: '(GL|gl).* was not declared",
+	"qtopengl":     "error: 'GLdouble' has a previous declaration",
+	"linker":       "final link failed: Bad value",
+	"tests":        "dh_auto_test: .* returned exit code 2",
 	"dependencies": "but it is not going to be installed",
-	"warnings": "some warnings being treated as errors",
+	"warnings":     "some warnings being treated as errors",
 }
 
-
 type PatternCause struct {
-	Pattern string      //string occuring in the error log
-	Cause string        //name of the corresponding error cause
+	Pattern string //string occuring in the error log
+	Cause   string //name of the corresponding error cause
 }
 
 //Update the cause field for FTBFS records based on a patterns matching their error logs
@@ -116,13 +115,10 @@ func updateCauses() {
 
 	q := causes.Find(nil)
 
-	//If there are additional patterns in the DB load those as well
-//	if q != nil {
-		q.For(&c, func() os.Error {
-			errorPatterns[c.Cause]=c.Pattern
-			return nil
-		})
-//	}
+	q.For(&c, func() os.Error {
+		errorPatterns[c.Cause] = c.Pattern
+		return nil
+	})
 
 	for cause, p := range errorPatterns {
 		collection.UpdateAll(bson.M{"content": bson.RegEx{Pattern: p}}, bson.M{"$set": bson.M{"cause": cause}})
@@ -174,9 +170,9 @@ func queryFTBFS(cause string) {
 }
 
 const (
-	MONGO_URL = "localhost"
-	MONGO_DB  = "FTBFS"
-	MONGO_COL_FTBFS = "ftbfs"
+	MONGO_URL        = "localhost"
+	MONGO_DB         = "FTBFS"
+	MONGO_COL_FTBFS  = "ftbfs"
 	MONGO_COL_CAUSES = "causes"
 )
 

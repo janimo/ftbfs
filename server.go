@@ -76,5 +76,5 @@ func runServer(port string, s chan int) {
 		println(err.String())
 	}
 
-	s<-1
+	s <- 1
 }
