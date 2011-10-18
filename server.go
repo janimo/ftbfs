@@ -14,28 +14,26 @@ type Entry struct {
 	Cause       string
 	Datecreated string
 	Component   string
+	Content     string
+	URL         string
 }
 
 type P struct {
-	Entries []Entry
+	Entries map[string]Entry
 }
 
 var p P
 
-//We're optimists and hope there won't be over 1000 FTBFS records :)
-
 func fillEntries() {
 	var entry *Entry
 	p = P{}
-	p.Entries = make([]Entry, 1000)
+	p.Entries = make(map[string]Entry)
 	q := collection.Find(nil)
-	i := 0
+
 	q.For(&entry, func() os.Error {
-		p.Entries[i] = *entry
-		i++
+		p.Entries[entry.Package] = *entry
 		return nil
 	})
-	p.Entries = p.Entries[:i]
 }
 
 func viewHandle(w http.ResponseWriter, r *http.Request) {
