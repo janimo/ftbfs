@@ -44,6 +44,15 @@ func viewHandle(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, p)
 }
 
+func logViewHandle(w http.ResponseWriter, r *http.Request) {
+	t, err := template.ParseFile("templates/logview.html")
+	if err != nil {
+		http.Error(w, err.String(), http.StatusInternalServerError)
+	}
+	pkg := r.URL.Path[9:]
+	t.Execute(w, p.Entries[pkg])
+}
+
 func updateEntries() {
 	c := time.Tick(3e9)
 	for {
@@ -51,11 +60,13 @@ func updateEntries() {
 		<-c
 	}
 }
+
 //Start the web server
 func runServer(port string, s chan int) {
 	go updateEntries()
 
 	http.HandleFunc("/view/", viewHandle)
+	http.HandleFunc("/logview/", logViewHandle)
 
 	pwd, _ := os.Getwd()
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(pwd+"/static/"))))
