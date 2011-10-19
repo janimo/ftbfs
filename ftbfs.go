@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"http"
 	"flag"
+	"time"
 	"io/ioutil"
 	"strings"
 	"launchpad.net/gobson/bson"
@@ -141,17 +142,29 @@ func save(b lpad.Build, spph lpad.SPPH) {
 }
 
 //Find current FTBFS logs
-func getFTBFS(root lpad.Root, source_name string) {
+func getFTBFS(root lpad.Root) {
 	ubuntu, _ := root.Distro("ubuntu")
 	series, _ := ubuntu.FocusSeries()
 	fmt.Println("Generating FTBFS list for", series.FullSeriesName())
 
 	for _, build_state := range []lpad.BuildState{lpad.BSFailedToBuild} {
-		ftbfs, _ := series.GetBuildRecords(build_state, lpad.PocketRelease, source_name)
+		ftbfs, _ := series.GetBuildRecords(build_state, lpad.PocketRelease, "")
 		ftbfs.For(func(b lpad.Build) os.Error {
 			process(b, build_state)
 			return nil
 		})
+	}
+}
+
+//nanoseconds in hour
+const HOUR = 1e9*3600
+
+func taskGetFTBFS(root lpad.Root) {
+	c := time.Tick(1 * HOUR)
+	for {
+		getFTBFS(root)
+		fillEntries()
+		<-c
 	}
 }
 
@@ -199,16 +212,21 @@ func main() {
 	flag.Parse()
 
 	mongoConnect()
+	root := login()
 
 	s := make(chan int)
 
 	if serve {
+		fillEntries()
 		go runServer(port, s)
 	}
 
 	if fetch {
-		root := login()
-		getFTBFS(root, "")
+		if serve {
+			go taskGetFTBFS(root)
+		} else {
+			getFTBFS(root)
+		}
 	}
 
 	if update {

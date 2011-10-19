@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"time"
 	"http"
 	"template"
 )
@@ -53,17 +52,8 @@ func logViewHandle(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, p.Entries[pkg])
 }
 
-func updateEntries() {
-	c := time.Tick(3e9)
-	for {
-		fillEntries()
-		<-c
-	}
-}
-
 //Start the web server
 func runServer(port string, s chan int) {
-	go updateEntries()
 
 	http.HandleFunc("/", viewHandle)
 	http.HandleFunc("/logview/", logViewHandle)
