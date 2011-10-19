@@ -126,9 +126,13 @@ func updateCauses() {
 	}
 }
 
+var ftbfsList map[string]bool
+
 func save(b lpad.Build, spph lpad.SPPH) {
 
 	url := b.BuildLogURL()
+
+	ftbfsList[url] = false, false
 
 	if stored(url) {
 		return
@@ -141,11 +145,39 @@ func save(b lpad.Build, spph lpad.SPPH) {
 	collection.Upsert(bson.M{"package": spph.PackageName()}, bson.M{"package": spph.PackageName(), "version": spph.PackageVersion(), "url": url, "cause": "other", "content": content, "datecreated": b.DateCreated(), "component": spph.Component()})
 }
 
+type FTBFSEntry struct {
+	URL string
+}
+
+func loadFTBFSList() {
+	var entry *FTBFSEntry
+
+	if ftbfsList == nil {
+		ftbfsList = make(map[string]bool)
+	}
+	q := collection.Find(nil)
+
+	q.For(&entry, func() os.Error {
+		ftbfsList[entry.URL] = true
+		return nil
+	})
+
+}
+
+//Remove old FTBFS entries
+func purgeFTBFSList() {
+	for url,_ := range(ftbfsList) {
+		collection.Remove(bson.M{"url":url})
+	}
+}
+
 //Find current FTBFS logs
 func getFTBFS(root lpad.Root) {
 	ubuntu, _ := root.Distro("ubuntu")
 	series, _ := ubuntu.FocusSeries()
 	fmt.Println("Generating FTBFS list for", series.FullSeriesName())
+
+	loadFTBFSList()
 
 	for _, build_state := range []lpad.BuildState{lpad.BSFailedToBuild} {
 		ftbfs, _ := series.GetBuildRecords(build_state, lpad.PocketRelease, "")
@@ -154,6 +186,8 @@ func getFTBFS(root lpad.Root) {
 			return nil
 		})
 	}
+
+	purgeFTBFSList()
 }
 
 //nanoseconds in hour
