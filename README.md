@@ -43,6 +43,10 @@ Update the failure cause field of each build entry based on matching string patt
 
     ftbfs -u
 
+Get the list of build failures due to a certain cause, as stored in the database
+
+    ftbfs -c warnings
+
 Serve a web page showing the FTBFS package list. This needs to be run from the package
 source dir as the templates and static files are there.
 
