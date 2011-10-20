@@ -35,7 +35,10 @@ const lastBytes = 100 * 1024
 //Retrieve the gist of the error logs pointed to by the URL
 func getBuildLog(url string) string {
 	response, err := http.Get(url)
-	check(err)
+	if url == "" {
+		return ""
+	}
+
 	defer response.Body.Close()
 
 	b, err := ioutil.ReadAll(response.Body)
@@ -138,9 +141,9 @@ func save(b lpad.Build, spph lpad.SPPH) {
 		return
 	}
 
-	content := getBuildLog(url)
-
 	fmt.Printf("Saving error log for %s %s %s\n", spph.PackageName(), spph.PackageVersion(), b.ArchTag())
+
+	content := getBuildLog(url)
 
 	collection.Upsert(bson.M{"package": spph.PackageName()}, bson.M{"package": spph.PackageName(), "version": spph.PackageVersion(), "url": url, "cause": "other", "content": content, "datecreated": b.DateCreated(), "component": spph.Component()})
 }
