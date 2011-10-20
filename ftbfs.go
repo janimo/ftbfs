@@ -175,7 +175,7 @@ func purgeFTBFSList() {
 func getFTBFS(root lpad.Root) {
 	ubuntu, _ := root.Distro("ubuntu")
 	series, _ := ubuntu.FocusSeries()
-	fmt.Println("Generating FTBFS list for", series.FullSeriesName())
+	fmt.Println("Fetching FTBFS list for", series.FullSeriesName())
 
 	loadFTBFSList()
 
@@ -188,6 +188,7 @@ func getFTBFS(root lpad.Root) {
 	}
 
 	purgeFTBFSList()
+	fmt.Println("Done fetching")
 }
 
 //nanoseconds in hour
