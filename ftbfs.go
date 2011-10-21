@@ -10,7 +10,7 @@ import (
 	"strings"
 	"launchpad.net/gobson/bson"
 	"launchpad.net/mgo"
-	"launchpad.net/~jani/lpad/changes"
+	"github.com/janimo/lpad"
 )
 
 func check(err os.Error) {
